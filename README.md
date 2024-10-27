@@ -1,7 +1,7 @@
-# TFS Gardener - Script de Jardinage pour LARP
+# TFS Gardener - Script de Jardinage pour FIVEM
 
 <p align="center">
-  <img src="https://images-ext-1.discordapp.net/external/rY7Mk23eOxxB_XXtPW4-jRH3_u0OtFcUJxnIa5gTdDg/%3Fsize%3D128/https/cdn.discordapp.com/icons/959902748390850640/a2bbc10a0d05cbd5d59bc8dc7a0055f1.png?format=webp&quality=lossless" alt="Logo"/>
+  <img src="https://cdn.discordapp.com/attachments/1291112806451511369/1300131722381361152/FiveM_GTA_V_Logo.png?ex=671fb985&is=671e6805&hm=1ad9f041a278429449b639691945a5986bc0c61f6198aec86f1111ff5fd93734&" alt="Logo" width="300" height="100"/>
 </p>
 
 ## 📜 Description
