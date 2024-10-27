@@ -69,14 +69,14 @@ Citizen.CreateThread(function()
                 if (GetDistanceBetweenCoords(coords, Base.Pos.x, Base.Pos.y, Base.Pos.z, true) < 1.2) then
                     if not onDuty then
                         sleep = 5
-                        DrawText3Ds(Base.Pos.x, Base.Pos.y, Base.Pos.z + 0.4, '~g~[E]~s~ - Changer de vêtements de travail')
+                        DrawText3Ds(Base.Pos.x, Base.Pos.y, Base.Pos.z + 0.4, '~y~[E]~s~ - Changer de vêtements de travail')
                         if IsControlJustPressed(0, Keys["E"]) then
-                            exports.rprogress:Custom({
+                            exports.TFS_progress:Custom({
                                 Duration = 2500,
                                 Label = "Vous changez de vêtements...",
                                 Animation = {
-                                    scenario = "WORLD_HUMAN_COP_IDLES",
-                                    animationDictionary = "idle_a",
+                                    scenario = "WORLD_HUMAN_CLIPBOARD",  -- Scénario pour simuler le changement de vêtements
+                                    animationDictionary = nil,             -- Pas besoin d'un dictionnaire d'animation ici
                                 },
                                 DisableControls = {
                                     Mouse = false,
@@ -101,7 +101,7 @@ Citizen.CreateThread(function()
                         sleep = 5
                         DrawText3Ds(Base.Pos.x, Base.Pos.y, Base.Pos.z + 0.4, '~r~[E]~s~ - Changer en vêtements de citoyen')
                         if IsControlJustPressed(0, Keys["E"]) then
-                            exports.rprogress:Custom({
+                            exports.TFS_progress:Custom({
                                 Duration = 2500,
                                 Label = "Vous changez de vêtements...",
                                 Animation = {
@@ -147,10 +147,10 @@ Citizen.CreateThread(function()
                         end
                     elseif inMenu then
                         sleep = 2
-                        DrawText3Dss(coords.x, coords.y, coords.z + 1.0, '~g~[V]~s~ - Chercher une course | ~r~[F]~s~ - Annuler la course')
+                        DrawText3Dss(coords.x, coords.y, coords.z + 1.0, '~y~[Y]~s~ - Chercher une course | ~r~[X]~s~ - Annuler la course')
                         if IsControlJustPressed(0, Keys["DEL"]) then
                             inMenu = false
-                        elseif IsControlJustPressed(0, Keys["V"]) then -- Code de la touche '7' sur le clavier principal
+                        elseif IsControlJustPressed(0, Keys["Y"]) then 
                             if Type == nil then
                                 inMenu = false
                                 ESX.ShowNotification("~b~Jardinier~s~</br>Recherche d'une course...", "#5fa05d")
@@ -191,7 +191,7 @@ Citizen.CreateThread(function()
                             else
                                 ESX.ShowNotification("~b~Jardinier~s~</br>Vous avez déjà une course en cours !", "#FF0000")
                             end
-                        elseif IsControlJustPressed(0, Keys["F"]) then
+                        elseif IsControlJustPressed(0, Keys["X"]) then
                             if Type then
                                 CancelWork()
                                 DeleteWaypoint()
@@ -209,20 +209,37 @@ end)
 
 -- GARAGE MENU
 Citizen.CreateThread(function()
-    while true do
+    -- Création du PNJ à la position du garage
+    local npcModel = `s_m_m_gardener_01`
+    RequestModel(npcModel)
+    while not HasModelLoaded(npcModel) do
+        Wait(1)
+    end
+    
+    local npc = CreatePed(4, npcModel, Garage.Pos.x, Garage.Pos.y, Garage.Pos.z - 1, false, true)
+    
+    -- Rendre le PNJ statique
+    SetEntityInvincible(npc, true)
+    FreezeEntityPosition(npc, true)
+    SetBlockingOfNonTemporaryEvents(npc, true)
+    SetEntityVisible(npc, true)
+    SetEntityHeading(npc, 270.0) 
 
+    while true do
         local sleep = 500
         local ped = PlayerPedId()
         local coords = GetEntityCoords(ped)
         local vehicle = GetVehiclePedIsIn(ped, false)
-        local WLCar = GetDisplayNameFromVehicleModel(GetEntityModel(vehicle))
 
         if PlayerData.job ~= nil and PlayerData.job.grade_name == 'gardener' then
             if onDuty then
-                if (GetDistanceBetweenCoords(coords, Garage.Pos.x, Garage.Pos.y, Garage.Pos.z, true) < 8) then
+                local distanceToNPC = GetDistanceBetweenCoords(coords, Garage.Pos.x, Garage.Pos.y, Garage.Pos.z, true)
+                
+                if distanceToNPC < 10 then -- Rayon de 10
                     sleep = 5
                     DrawMarker(Marker.Type, Garage.Pos.x, Garage.Pos.y, Garage.Pos.z - 0.95, 0.0, 0.0, 0.0, 0, 0.0, 0.0, Garage.Size.x, Garage.Size.y, Garage.Size.z, Garage.Color.r, Garage.Color.g, Garage.Color.b, 100, false, true, 2, false, false, false, false)
-                    if (GetDistanceBetweenCoords(coords, Garage.Pos.x, Garage.Pos.y, Garage.Pos.z, true) < 1.2) then
+                    
+                    if distanceToNPC < 3.0 then -- Rayon d'interaction
                         if IsPedInAnyVehicle(ped, false) then
                             sleep = 5
                             DrawText3Ds(Garage.Pos.x, Garage.Pos.y, Garage.Pos.z + 0.4, '~r~[E]~s~ - Rendre le véhicule')
@@ -240,7 +257,7 @@ Citizen.CreateThread(function()
                         elseif not IsPedInAnyVehicle(ped, false) then
                             sleep = 5
                             if not inGarageMenu then
-                                DrawText3Ds(Garage.Pos.x, Garage.Pos.y, Garage.Pos.z + 0.4, '~g~[E]~s~ - Ouvrir le menu du garage')
+                                DrawText3Ds(Garage.Pos.x, Garage.Pos.y, Garage.Pos.z + 0.4, '~y~[E]~s~ - Ouvrir le menu du garage')
                                 if IsControlJustReleased(0, Keys["E"]) then
                                     if not inMenu then
                                         FreezeEntityPosition(ped, true)
@@ -251,7 +268,7 @@ Citizen.CreateThread(function()
                                     end
                                 end
                             elseif inGarageMenu then
-                                DrawText3DMenu(Garage.Pos.x - 0.8, Garage.Pos.y, Garage.Pos.z + 0.8, '~g~[W]~s~ - Place de parking #1\n~g~[X]~s~ - Place de parking #2\n~r~[E]~s~ - Fermer le menu du garage')
+                                DrawText3DMenu(Garage.Pos.x - 0.8, Garage.Pos.y, Garage.Pos.z + 0.8, '~y~[W]~s~ - Place de parking #1\n~y~[X]~s~ - Place de parking #2\n~r~[E]~s~ - Fermer le menu du garage')
                                 if IsControlJustReleased(0, Keys["E"]) then
                                     inGarageMenu = false
                                     FreezeEntityPosition(ped, false)
@@ -311,6 +328,9 @@ Citizen.CreateThread(function()
 end)
 
 
+
+
+
 -- OPENING VAN DOORS
 Citizen.CreateThread(function()
     while true do
@@ -327,9 +347,9 @@ Citizen.CreateThread(function()
                     if (GetDistanceBetweenCoords(coords.x, coords.y, coords.z, trunkpos.x, trunkpos.y, trunkpos.z, true) < 2) then
                         if not hasOpenDoor then
                             sleep = 5
-                            DrawText3Ds(trunkpos.x, trunkpos.y, trunkpos.z + 0.4, "~g~[G]~s~ - Ouvrir les portes")
+                            DrawText3Ds(trunkpos.x, trunkpos.y, trunkpos.z + 0.4, "~y~[G]~s~ - Ouvrir les portes")
                             if IsControlJustReleased(0, Keys["G"]) then
-                                exports.rprogress:Custom({
+                                exports.TFS_progress:Custom({
                                     Duration = 1500,
                                     Label = "Vous ouvrez les portes arrière",
                                     DisableControls = {
@@ -346,11 +366,11 @@ Citizen.CreateThread(function()
                         elseif hasOpenDoor then
                             if not hasBlower and not hasLawnMower and not hasTrimmer and not hasBackPack then
                                 sleep = 5
-                                DrawText3Ds(trunkpos.x, trunkpos.y, trunkpos.z + 0.7, "~g~[E]~s~ - Souffleur de feuilles | ~g~[H]~s~ Sac à dos")
-                                DrawText3Ds(trunkpos.x, trunkpos.y, trunkpos.z + 0.5, "~g~[W]~s~ - Taille-bordures | ~g~[X]~s~ Tondeuse à gazon")
+                                DrawText3Ds(trunkpos.x, trunkpos.y, trunkpos.z + 0.7, "~y~[E]~s~ - Souffleur de feuilles | ~y~[H]~s~ Sac à dos")
+                                DrawText3Ds(trunkpos.x, trunkpos.y, trunkpos.z + 0.5, "~y~[W]~s~ - Taille-haies | ~y~[X]~s~ Tondeuse à gazon")
                                 DrawText3Ds(trunkpos.x, trunkpos.y, trunkpos.z + 0.3, "~r~[G]~s~ - Fermer les portes")
                                 if IsControlJustReleased(0, Keys["G"]) then
-                                    exports.rprogress:Custom({
+                                    exports.TFS_progress:Custom({
                                         Duration = 1500,
                                         Label = "Vous fermez les portes arrière",
                                         DisableControls = {
@@ -364,7 +384,7 @@ Citizen.CreateThread(function()
                                     SetVehicleDoorShut(vehicle, 2, false)
                                     hasOpenDoor = false
                                 elseif IsControlJustReleased(0, Keys["E"]) then
-                                    exports.rprogress:Custom({
+                                    exports.TFS_progress:Custom({
                                         Duration = 1500,
                                         Label = "Vous sortez le souffleur de feuilles...",
                                         DisableControls = {
@@ -377,7 +397,7 @@ Citizen.CreateThread(function()
                                     addLeafBlower()
                                     hasBlower = true
                                 elseif IsControlJustReleased(0, Keys["H"]) then
-                                    exports.rprogress:Custom({
+                                    exports.TFS_progress:Custom({
                                         Duration = 1500,
                                         Label = "Vous sortez le sac à dos...",
                                         DisableControls = {
@@ -390,9 +410,9 @@ Citizen.CreateThread(function()
                                     addBackPack()
                                     hasBackPack = true
                                 elseif IsControlJustReleased(0, Keys["W"]) then
-                                    exports.rprogress:Custom({
+                                    exports.TFS_progress:Custom({
                                         Duration = 1500,
-                                        Label = "Vous sortez le taille-bordures...",
+                                        Label = "Vous sortez le taille-haies...",
                                         DisableControls = {
                                             Mouse = false,
                                             Player = true,
@@ -403,7 +423,7 @@ Citizen.CreateThread(function()
                                     addTrimmer()
                                     hasTrimmer = true
                                 elseif IsControlJustReleased(0, Keys["X"]) then
-                                    exports.rprogress:Custom({
+                                    exports.TFS_progress:Custom({
                                         Duration = 1500,
                                         Label = "Vous sortez la tondeuse à gazon...",
                                         DisableControls = {
@@ -418,9 +438,9 @@ Citizen.CreateThread(function()
                                 end
                             elseif hasLawnMower or hasBlower or hasBackPack or hasTrimmer then
                                 sleep = 5
-                                DrawText3Ds(trunkpos.x, trunkpos.y, trunkpos.z + 0.5, "~g~[E]~s~ - Ranger l'outil dans le coffre")
+                                DrawText3Ds(trunkpos.x, trunkpos.y, trunkpos.z + 0.5, "~y~[E]~s~ - Ranger l'outil dans le coffre")
                                 if IsControlJustReleased(0, Keys["E"]) then
-                                    exports.rprogress:Custom({
+                                    exports.TFS_progress:Custom({
                                         Duration = 1500,
                                         Label = "Vous rangez l'outil dans le coffre...",
                                         DisableControls = {
@@ -465,8 +485,8 @@ Citizen.CreateThread(function()
                     if not IsPedInAnyVehicle(ped, false) then
                         if not wasTalked then
                             if (GetDistanceBetweenCoords(coords, coordsNPC.x, coordsNPC.y, coordsNPC.z, true) < 2.5) then
-                                DrawText3Ds(coordsNPC.x, coordsNPC.y, coordsNPC.z + 1.05, 'Salut, tu veux nettoyer mon jardin pour ~g~' ..salary.. '$~s~?')
-                                DrawText3Ds(coords.x, coords.y, coords.z + 1.0, '~g~[W]~s~ - Ouais, bien sûr | ~r~[X]~s~ - Non merci')
+                                DrawText3Ds(coordsNPC.x, coordsNPC.y, coordsNPC.z + 1.05, 'Salut, tu veux nettoyer mon jardin pour ~y~' ..salary.. '$~s~?')
+                                DrawText3Ds(coords.x, coords.y, coords.z + 1.0, '~y~[W]~s~ - Ouais, bien sûr | ~r~[X]~s~ - Non merci')
                                 if IsControlJustReleased(0, Keys["W"]) then
                                     wasTalked = true
                                     appointed = true
@@ -509,7 +529,7 @@ Citizen.CreateThread(function()
                                     elseif Paycheck then
                                         if (GetDistanceBetweenCoords(coords, coordsNPC.x, coordsNPC.y, coordsNPC.z, true) < 1.5) then
                                             DrawText3Ds(coordsNPC.x, coordsNPC.y, coordsNPC.z + 0.95, "Maintenant le jardin a fière allure, voici votre argent.")
-                                            DrawText3Ds(coords.x, coords.y, coords.z + 1.0, '~g~[E]~s~ - Prendre l\'argent')
+                                            DrawText3Ds(coords.x, coords.y, coords.z + 1.0, '~y~[E]~s~ - Prendre l\'argent')
                                             if IsControlJustReleased(0, Keys["E"]) then
                                                 TaskTurnPedToFaceEntity(v.ped, ped, 0.2)
                                                 TriggerServerEvent('TFS_gardener:Payout', salary, AmountPayout)
@@ -539,12 +559,12 @@ Citizen.CreateThread(function()
                                 DrawMarker(Marker.Type, v.x, v.y, v.z - 0.90, 0.0, 0.0, 0.0, 0, 0.0, 0.0, Marker.Size.x, Marker.Size.y, Marker.Size.z, Marker.Color.r, Marker.Color.g, Marker.Color.b, 100, false, true, 2, false, false, false, false)
                                 if (GetDistanceBetweenCoords(coords, v.x, v.y, v.z, true) < 1.2) then
                                     sleep = 5
-                                    DrawText3Ds(v.x, v.y, v.z + 0.4, "~g~[E]~s~ - Arracher l'herbe")
+                                    DrawText3Ds(v.x, v.y, v.z + 0.4, "~y~[E]~s~ - Arracher l'herbe")
                                     if IsControlJustReleased(0, Keys["E"]) then
                                         ESX.Streaming.RequestAnimDict('amb@world_human_gardener_plant@male@enter', function()
                                             TaskPlayAnim(ped, 'amb@world_human_gardener_plant@male@enter', 'enter', 8.0, -8.0, -1, 2, 0, false, false, false)
                                         end)
-                                        exports.rprogress:Custom({
+                                        exports.TFS_progress:Custom({
                                             Duration = 3500,
                                             Label = "Déchirant la mauvaise herbe...",
                                             DisableControls = {
@@ -577,8 +597,8 @@ Citizen.CreateThread(function()
                     if not IsPedInAnyVehicle(ped, false) then
                         if not wasTalked then
                             if (GetDistanceBetweenCoords(coords, coordsNPC.x, coordsNPC.y, coordsNPC.z, true) < 2.5) then
-                                DrawText3Ds(coordsNPC.x, coordsNPC.y, coordsNPC.z + 1.05, 'Bonjour, veux-tu planter des arbres pour ~g~' ..salary.. '$~s~ ?')
-                                DrawText3Ds(coords.x, coords.y, coords.z + 1.0, '~g~[W]~s~ - Bien sûr | ~r~[X]~s~ - Pas question')
+                                DrawText3Ds(coordsNPC.x, coordsNPC.y, coordsNPC.z + 1.05, 'Bonjour, veux-tu planter des arbres pour ~y~' ..salary.. '$~s~ ?')
+                                DrawText3Ds(coords.x, coords.y, coords.z + 1.0, '~y~[W]~s~ - Bien sûr | ~r~[X]~s~ - Pas question')
                                 if IsControlJustReleased(0, Keys["W"]) then
                                     wasTalked = true
                                     appointed = true
@@ -621,7 +641,7 @@ Citizen.CreateThread(function()
                                     elseif Paycheck then
                                         if (GetDistanceBetweenCoords(coords, coordsNPC.x, coordsNPC.y, coordsNPC.z, true) < 1.5) then
                                             DrawText3Ds(coordsNPC.x, coordsNPC.y, coordsNPC.z + 0.95, "Attends juste qu'ils poussent ! Prends ton salaire")
-                                            DrawText3Ds(coords.x, coords.y, coords.z + 1.0, '~g~[E]~s~ - Prendre l\'argent')
+                                            DrawText3Ds(coords.x, coords.y, coords.z + 1.0, '~y~[E]~s~ - Prendre l\'argent')
                                             if IsControlJustReleased(0, Keys["E"]) then
                                                 TaskTurnPedToFaceEntity(v.ped, ped, 0.2)
                                                 TriggerServerEvent('TFS_gardener:Payout', salary, AmountPayout)
@@ -651,9 +671,9 @@ Citizen.CreateThread(function()
                                 DrawMarker(Marker.Type, v.x, v.y, v.z - 0.90, 0.0, 0.0, 0.0, 0, 0.0, 0.0, Marker.Size.x, Marker.Size.y, Marker.Size.z, Marker.Color.r, Marker.Color.g, Marker.Color.b, 100, false, true, 2, false, false, false, false)
                                 if (GetDistanceBetweenCoords(coords, v.x, v.y, v.z, true) < 1.2) then
                                     sleep = 5
-                                    DrawText3Ds(v.x, v.y, v.z + 0.4, "~g~[E]~s~ - Planter un arbre")
+                                    DrawText3Ds(v.x, v.y, v.z + 0.4, "~y~[E]~s~ - Planter un arbre")
                                     if IsControlJustReleased(0, Keys["E"]) then
-                                        exports.rprogress:Custom({
+                                        exports.TFS_progress:Custom({
                                             Duration = 5500,
                                             Label = "Plantation de l'arbre...",
                                             Animation = {
@@ -689,8 +709,8 @@ Citizen.CreateThread(function()
                     if not IsPedInAnyVehicle(ped, false) then
                         if not wasTalked then
                             if (GetDistanceBetweenCoords(coords, coordsNPC.x, coordsNPC.y, coordsNPC.z, true) < 2.5) then
-                                DrawText3Ds(coordsNPC.x, coordsNPC.y, coordsNPC.z + 1.05, 'Bonjour Monsieur, voulez-vous gagner ~g~' ..salary.. '$~s~ ?')
-                                DrawText3Ds(coords.x, coords.y, coords.z + 1.0, '~g~[W]~s~ - Volontiers | ~r~[X]~s~ - Pas du tout')
+                                DrawText3Ds(coordsNPC.x, coordsNPC.y, coordsNPC.z + 1.05, 'Bonjour Monsieur, voulez-vous gagner ~y~' ..salary.. '$~s~ ?')
+                                DrawText3Ds(coords.x, coords.y, coords.z + 1.0, '~y~[W]~s~ - Volontiers | ~r~[X]~s~ - Pas du tout')
                                 if IsControlJustReleased(0, Keys["W"]) then
                                     wasTalked = true
                                     appointed = true
@@ -733,7 +753,7 @@ Citizen.CreateThread(function()
                                     elseif Paycheck then
                                         if (GetDistanceBetweenCoords(coords, coordsNPC.x, coordsNPC.y, coordsNPC.z, true) < 1.5) then
                                             DrawText3Ds(coordsNPC.x, coordsNPC.y, coordsNPC.z + 0.95, "Bien joué, prenez l'argent")
-                                            DrawText3Ds(coords.x, coords.y, coords.z + 1.0, '~g~[E]~s~ - Prenez l\'argent')
+                                            DrawText3Ds(coords.x, coords.y, coords.z + 1.0, '~y~[E]~s~ - Prenez l\'argent')
                                             if IsControlJustReleased(0, Keys["E"]) then
                                                 if not hasBlower then
                                                     TaskTurnPedToFaceEntity(v.ped, ped, 0.2)
@@ -767,13 +787,13 @@ Citizen.CreateThread(function()
                                 DrawMarker(Marker.Type, v.x, v.y, v.z - 0.90, 0.0, 0.0, 0.0, 0, 0.0, 0.0, Marker.Size.x, Marker.Size.y, Marker.Size.z, Marker.Color.r, Marker.Color.g, Marker.Color.b, 100, false, true, 2, false, false, false, false)
                                 if (GetDistanceBetweenCoords(coords, v.x, v.y, v.z, true) < 1.2) then
                                     sleep = 5
-                                    DrawText3Ds(v.x, v.y, v.z + 0.4, "~g~[E]~s~ - Soufflez les feuilles")
+                                    DrawText3Ds(v.x, v.y, v.z + 0.4, "~y~[E]~s~ - Soufflez les feuilles")
                                     if IsControlJustReleased(0, Keys["E"]) then
                                         if hasBlower then
                                             ESX.Streaming.RequestAnimDict('amb@world_human_gardener_leaf_blower@idle_a', function()
                                                 TaskPlayAnim(ped, 'amb@world_human_gardener_leaf_blower@idle_a', 'idle_a', 8.0, -8.0, -1, 2, 0, false, false, false)
                                             end)
-                                            exports.rprogress:Custom({
+                                            exports.TFS_progress:Custom({
                                                 Duration = 5500,
                                                 Label = "Souffler les feuilles...",
                                                 DisableControls = {
@@ -809,8 +829,8 @@ Citizen.CreateThread(function()
                     if not IsPedInAnyVehicle(ped, false) then
                         if not wasTalked then
                             if (GetDistanceBetweenCoords(coords, coordsNPC.x, coordsNPC.y, coordsNPC.z, true) < 2.5) then
-                                DrawText3Ds(coordsNPC.x, coordsNPC.y, coordsNPC.z + 1.05, 'Bonjour Monsieur, voulez-vous gagner ~g~' ..salary.. '$~s~?')
-                                DrawText3Ds(coords.x, coords.y, coords.z + 1.0, '~g~[W]~s~ - Oui | ~r~[X]~s~ - Lâche ça')
+                                DrawText3Ds(coordsNPC.x, coordsNPC.y, coordsNPC.z + 1.05, 'Bonjour Monsieur, voulez-vous gagner ~y~' ..salary.. '$~s~?')
+                                DrawText3Ds(coords.x, coords.y, coords.z + 1.0, '~y~[W]~s~ - Oui | ~r~[X]~s~ - Lâche ça')
                                 if IsControlJustReleased(0, Keys["W"]) then
                                     wasTalked = true
                                     appointed = true
@@ -853,7 +873,7 @@ Citizen.CreateThread(function()
                                     elseif Paycheck then
                                         if (GetDistanceBetweenCoords(coords, coordsNPC.x, coordsNPC.y, coordsNPC.z, true) < 1.5) then
                                             DrawText3Ds(coordsNPC.x, coordsNPC.y, coordsNPC.z + 0.95, "Bien joué, prends l'argent")
-                                            DrawText3Ds(coords.x, coords.y, coords.z + 1.0, '~g~[E]~s~ - Prends l\'argent')
+                                            DrawText3Ds(coords.x, coords.y, coords.z + 1.0, '~y~[E]~s~ - Prends l\'argent')
                                             if IsControlJustReleased(0, Keys["E"]) then
                                                 if not hasBlower then
                                                     TaskTurnPedToFaceEntity(v.ped, ped, 0.2)
@@ -887,13 +907,13 @@ Citizen.CreateThread(function()
                                 DrawMarker(Marker.Type, v.x, v.y, v.z - 0.90, 0.0, 0.0, 0.0, 0, 0.0, 0.0, Marker.Size.x, Marker.Size.y, Marker.Size.z, Marker.Color.r, Marker.Color.g, Marker.Color.b, 100, false, true, 2, false, false, false, false)
                                 if (GetDistanceBetweenCoords(coords, v.x, v.y, v.z, true) < 1.2) then
                                     sleep = 5
-                                    DrawText3Ds(v.x, v.y, v.z + 0.4, "~g~[E]~s~ - Soufflez les feuilles")
+                                    DrawText3Ds(v.x, v.y, v.z + 0.4, "~y~[E]~s~ - Soufflez les feuilles")
                                     if IsControlJustReleased(0, Keys["E"]) then
                                         if hasBlower then
                                             ESX.Streaming.RequestAnimDict('amb@world_human_gardener_leaf_blower@idle_a', function()
                                                 TaskPlayAnim(ped, 'amb@world_human_gardener_leaf_blower@idle_a', 'idle_a', 8.0, -8.0, -1, 2, 0, false, false, false)
                                             end)
-                                            exports.rprogress:Custom({
+                                            exports.TFS_progress:Custom({
                                                 Duration = 5500,
                                                 Label = "Soufflage des feuilles...",
                                                 DisableControls = {
@@ -929,8 +949,8 @@ Citizen.CreateThread(function()
                     if not IsPedInAnyVehicle(ped, false) then
                         if not wasTalked then
                             if (GetDistanceBetweenCoords(coords, coordsNPC.x, coordsNPC.y, coordsNPC.z, true) < 2.5) then
-                                DrawText3Ds(coordsNPC.x, coordsNPC.y, coordsNPC.z + 1.05, 'Bonjour mon pote, tu veux devenir riche avec ~g~' ..salary.. '$~s~ ?')
-                                DrawText3Ds(coords.x, coords.y, coords.z + 1.0, '~g~[W]~s~ - D\'accord | ~r~[X]~s~ - Je n\'ai pas le temps')
+                                DrawText3Ds(coordsNPC.x, coordsNPC.y, coordsNPC.z + 1.05, 'Bonjour mon pote, tu veux devenir riche avec ~y~' ..salary.. '$~s~ ?')
+                                DrawText3Ds(coords.x, coords.y, coords.z + 1.0, '~y~[W]~s~ - D\'accord | ~r~[X]~s~ - Je n\'ai pas le temps')
                                 if IsControlJustReleased(0, Keys["W"]) then
                                     wasTalked = true
                                     appointed = true
@@ -973,7 +993,7 @@ Citizen.CreateThread(function()
                                     elseif Paycheck then
                                         if (GetDistanceBetweenCoords(coords, coordsNPC.x, coordsNPC.y, coordsNPC.z, true) < 1.5) then
                                             DrawText3Ds(coordsNPC.x, coordsNPC.y, coordsNPC.z + 0.95, "Voici l'argent, tu es le meilleur !")
-                                            DrawText3Ds(coords.x, coords.y, coords.z + 1.0, '~g~[E]~s~ - Prendre l\'argent')
+                                            DrawText3Ds(coords.x, coords.y, coords.z + 1.0, '~y~[E]~s~ - Prendre l\'argent')
                                             if IsControlJustReleased(0, Keys["E"]) then
                                                 if not hasTrimmer then
                                                     TaskTurnPedToFaceEntity(v.ped, ped, 0.2)
@@ -1007,13 +1027,13 @@ Citizen.CreateThread(function()
                                 DrawMarker(Marker.Type, v.x, v.y, v.z - 0.90, 0.0, 0.0, 0.0, 0, 0.0, 0.0, Marker.Size.x, Marker.Size.y, Marker.Size.z, Marker.Color.r, Marker.Color.g, Marker.Color.b, 100, false, true, 2, false, false, false, false)
                                 if (GetDistanceBetweenCoords(coords, v.x, v.y, v.z, true) < 1.2) then
                                     sleep = 5
-                                    DrawText3Ds(v.x, v.y, v.z + 0.4, "~g~[E]~s~ - Tailler la haie")
+                                    DrawText3Ds(v.x, v.y, v.z + 0.4, "~y~[E]~s~ - Tailler la haie")
                                     if IsControlJustReleased(0, Keys["E"]) then
                                         if hasTrimmer then
                                             ESX.Streaming.RequestAnimDict('anim@mp_radio@garage@high', function()
                                                 TaskPlayAnim(ped, 'anim@mp_radio@garage@high', 'idle_a', 8.0, -8.0, -1, 2, 0, false, false, false)
                                             end)
-                                            exports.rprogress:Custom({
+                                            exports.TFS_progress:Custom({
                                                 Duration = 5500,
                                                 Label = "Taille de la haie...",
                                                 DisableControls = {
@@ -1049,8 +1069,8 @@ Citizen.CreateThread(function()
                     if not IsPedInAnyVehicle(ped, false) then
                         if not wasTalked then
                             if (GetDistanceBetweenCoords(coords, coordsNPC.x, coordsNPC.y, coordsNPC.z, true) < 2.5) then
-                                DrawText3Ds(coordsNPC.x, coordsNPC.y, coordsNPC.z + 1.05, "Salut, tu ne veux pas tondre la pelouse pour ~g~" ..salary.. '$~s~ ?')
-                                DrawText3Ds(coords.x, coords.y, coords.z + 1.0, "~g~[W]~s~ - D'accord | ~r~[X]~s~ - Je suis pressé")
+                                DrawText3Ds(coordsNPC.x, coordsNPC.y, coordsNPC.z + 1.05, "Salut, tu ne veux pas tondre la pelouse pour ~y~" ..salary.. '$~s~ ?')
+                                DrawText3Ds(coords.x, coords.y, coords.z + 1.0, "~y~[W]~s~ - D'accord | ~r~[X]~s~ - Je suis pressé")
                                 if IsControlJustReleased(0, Keys["W"]) then
                                     wasTalked = true
                                     appointed = true
@@ -1093,7 +1113,7 @@ Citizen.CreateThread(function()
                                     elseif Paycheck then
                                         if (GetDistanceBetweenCoords(coords, coordsNPC.x, coordsNPC.y, coordsNPC.z, true) < 1.5) then
                                             DrawText3Ds(coordsNPC.x, coordsNPC.y, coordsNPC.z + 0.95, "Maintenant ce jardin a du sens, prends l'argent promis")
-                                            DrawText3Ds(coords.x, coords.y, coords.z + 1.0, '~g~[E]~s~ - Prends l\'argent')
+                                            DrawText3Ds(coords.x, coords.y, coords.z + 1.0, '~y~[E]~s~ - Prends l\'argent')
                                             if IsControlJustReleased(0, Keys["E"]) then
                                                 if not hasLawnMower then
                                                     TaskTurnPedToFaceEntity(v.ped, ped, 0.2)
@@ -1127,7 +1147,7 @@ Citizen.CreateThread(function()
                                 DrawMarker(Marker.Type, v.x, v.y, v.z - 0.90, 0.0, 0.0, 0.0, 0, 0.0, 0.0, Marker.Size.x, Marker.Size.y, Marker.Size.z, Marker.Color.r, Marker.Color.g, Marker.Color.b, 100, false, true, 2, false, false, false, false)
                                 if (GetDistanceBetweenCoords(coords, v.x, v.y, v.z, true) < 1.2) then
                                     sleep = 5
-                                    DrawText3Ds(v.x, v.y, v.z + 0.4, "~g~[E]~s~ - Tondre l'herbe")
+                                    DrawText3Ds(v.x, v.y, v.z + 0.4, "~y~[E]~s~ - Tondre l'herbe")
                                     if IsControlJustReleased(0, Keys["E"]) then
                                         if hasLawnMower then
                                             v.taked = true
@@ -1155,8 +1175,8 @@ Citizen.CreateThread(function()
                     if not IsPedInAnyVehicle(ped, false) then
                         if not wasTalked then
                             if (GetDistanceBetweenCoords(coords, coordsNPC.x, coordsNPC.y, coordsNPC.z, true) < 2.5) then
-                                DrawText3Ds(coordsNPC.x, coordsNPC.y, coordsNPC.z + 1.05, "Yo, tu ne veux pas arroser mes plantes pour ~g~" ..salary.. '$~s~ ?')
-                                DrawText3Ds(coords.x, coords.y, coords.z + 1.0, "~g~[W]~s~ - Je suis intéressé | ~r~[X]~s~ - Je ne suis pas intéressé")
+                                DrawText3Ds(coordsNPC.x, coordsNPC.y, coordsNPC.z + 1.05, "Yo, tu ne veux pas arroser mes plantes pour ~y~" ..salary.. '$~s~ ?')
+                                DrawText3Ds(coords.x, coords.y, coords.z + 1.0, "~y~[W]~s~ - Je suis intéressé | ~r~[X]~s~ - Je ne suis pas intéressé")
                                 if IsControlJustReleased(0, Keys["W"]) then
                                     wasTalked = true
                                     appointed = true
@@ -1199,7 +1219,7 @@ Citizen.CreateThread(function()
                                     elseif Paycheck then
                                         if (GetDistanceBetweenCoords(coords, coordsNPC.x, coordsNPC.y, coordsNPC.z, true) < 1.5) then
                                             DrawText3Ds(coordsNPC.x, coordsNPC.y, coordsNPC.z + 0.95, "Elles vont pousser à tout moment... Prends ton argent")
-                                            DrawText3Ds(coords.x, coords.y, coords.z + 1.0, '~g~[E]~s~ - Prendre l\'argent')
+                                            DrawText3Ds(coords.x, coords.y, coords.z + 1.0, '~y~[E]~s~ - Prendre l\'argent')
                                             if IsControlJustReleased(0, Keys["E"]) then
                                                 if not hasBackPack then
                                                     TaskTurnPedToFaceEntity(v.ped, ped, 0.2)
@@ -1233,13 +1253,13 @@ Citizen.CreateThread(function()
                                 DrawMarker(Marker.Type, v.x, v.y, v.z - 0.90, 0.0, 0.0, 0.0, 0, 0.0, 0.0, Marker.Size.x, Marker.Size.y, Marker.Size.z, Marker.Color.r, Marker.Color.g, Marker.Color.b, 100, false, true, 2, false, false, false, false)
                                 if (GetDistanceBetweenCoords(coords, v.x, v.y, v.z, true) < 1.2) then
                                     sleep = 5
-                                    DrawText3Ds(v.x, v.y, v.z + 0.4, "~g~[E]~s~ - Arroser les plantes")
+                                    DrawText3Ds(v.x, v.y, v.z + 0.4, "~y~[E]~s~ - Arroser les plantes")
                                     if IsControlJustReleased(0, Keys["E"]) then
                                         if hasBackPack then
                                             ESX.Streaming.RequestAnimDict('missarmenian3_gardener', function()
                                                 TaskPlayAnim(ped, 'missarmenian3_gardener', 'blower_idle_a', 8.0, -8.0, -1, 2, 0, false, false, false)
                                             end)
-                                            exports.rprogress:Custom({
+                                            exports.TFS_progress:Custom({
                                                 Duration = 5500,
                                                 Label = "Arrosage des plantes...",
                                                 DisableControls = {
